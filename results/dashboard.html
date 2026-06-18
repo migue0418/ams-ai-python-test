@@ -81,7 +81,6 @@ function renderCard(container, run, dir) {
     ['Intentos a /extract', String(f.extract_attempts), false],
     ['Ratio intentos/req', f.ratio_attempts_per_request.toFixed(2), false],
     ['429 del provider', String(f.rate_limited_429), false],
-    ['Tiempo hasta drenar', `${run.drain_seconds}s`, false],
   ];
   for (const [label, value, isSub] of rows) {
     const tr = document.createElement('tr');
