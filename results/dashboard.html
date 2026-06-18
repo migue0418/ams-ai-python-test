@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Resultados: Intelligent Notification Service</title>
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"
+  integrity="sha384-XcdcwHqIPULERb2yDEM4R0XaQKU3YnDsrTmjACBZyfdVVqjh6xQ4/DCMd7XLcA6Y"
+  crossorigin="anonymous"
+></script>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  p.lead { color: #444; max-width: 70ch; }
+  .cards { display: flex; gap: 1rem; margin: 1.5rem 0; flex-wrap: wrap; }
+  .card { flex: 1; min-width: 240px; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; }
+  .card h2 { margin: 0 0 0.5rem; font-size: 1rem; }
+  .card table { width: 100%; font-size: 0.9rem; border-collapse: collapse; }
+  .card tr.sub td:first-child { padding-left: 1.25rem; color: #666; }
+  .card td { padding: 2px 0; }
+  .card td:last-child { text-align: right; font-weight: 600; }
+  .charts { margin: 1.5rem 0; }
+  .chart-box { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; }
+  footer { margin-top: 2rem; font-size: 0.85rem; color: #666; border-top: 1px solid #ddd; padding-top: 1rem; }
+  footer a { color: #06c; }
+  #error { color: #b00; white-space: pre-wrap; }
+</style>
+<!-- EMBEDDED_DATA_START -->
+<script>window.__EMBEDDED_RESULTS__ = {"layered-extraction": {"label": "Parsing en capas + reintento acotado", "total_requests": 2748, "drain_seconds": 4, "final": {"sent": 2645, "failed": 103, "failed_extraction": 103, "failed_provider": 0, "extract_attempts": 3307, "ratio_attempts_per_request": 1.203, "rate_limited_429": 0}, "samples": [{"t": 4, "total": 2748, "sent": 2645, "failed": 103, "extract_attempts": 3307, "rate_limited_429": 0}]}};</script>
+<!-- EMBEDDED_DATA_END -->
+</head>
+<body>
+  <h1>Resultados: Intelligent Notification Service</h1>
+  <p class="lead">
+    Datos reales contra el stack levantado con <code>docker-compose</code> (carga generada por
+    <code>docker-compose run --rm load-test</code>, 200 VUs). Cada carpeta <code>results/&lt;nombre&gt;/</code>
+    tiene su <code>summary.json</code>, generado por <a href="extract.py">extract.py</a> a partir de
+    <code>docker-compose logs</code>, más los logs completos de esa ejecución. Por ahora solo hay una
+    ejecución capturada. Para comparar antes/después, se añade otra carpeta y se reejecuta
+    <a href="embed_data.py">embed_data.py</a>.
+  </p>
+
+  <div id="error"></div>
+  <div class="cards" id="cards"></div>
+
+  <div class="charts">
+    <div class="chart-box"><canvas id="summaryChart"></canvas></div>
+  </div>
+
+  <footer id="footer"></footer>
+
+<script>
+const PALETTE = ['#3d9970', '#e07a5f', '#4477aa', '#cc6677'];
+
+function loadRuns() {
+  const embedded = window.__EMBEDDED_RESULTS__;
+  if (!embedded || Object.keys(embedded).length === 0) {
+    throw new Error('no hay datos embebidos. Ejecuta python embed_data.py primero.');
+  }
+  return embedded;
+}
+
+function renderCard(container, run, dir) {
+  const f = run.final;
+  const pct = (n) => ((100 * n) / run.total_requests).toFixed(1) + '%';
+
+  const div = document.createElement('div');
+  div.className = 'card';
+
+  const h2 = document.createElement('h2');
+  h2.textContent = run.label;
+  div.appendChild(h2);
+
+  const table = document.createElement('table');
+  const rows = [
+    ['Requests procesados', String(run.total_requests), false],
+    ['Enviados (sent)', `${f.sent} (${pct(f.sent)})`, false],
+    ['Fallidos (failed)', `${f.failed} (${pct(f.failed)})`, false],
+    ['↳ fallo de extracción', String(f.failed_extraction), true],
+    ['↳ fallo de provider', String(f.failed_provider), true],
+    ['Intentos a /extract', String(f.extract_attempts), false],
+    ['Ratio intentos/req', f.ratio_attempts_per_request.toFixed(2), false],
+    ['429 del provider', String(f.rate_limited_429), false],
+  ];
+  for (const [label, value, isSub] of rows) {
+    const tr = document.createElement('tr');
+    if (isSub) tr.className = 'sub';
+    const tdLabel = document.createElement('td');
+    tdLabel.textContent = label;
+    const tdValue = document.createElement('td');
+    tdValue.textContent = value;
+    tr.appendChild(tdLabel);
+    tr.appendChild(tdValue);
+    table.appendChild(tr);
+  }
+  div.appendChild(table);
+
+  const links = document.createElement('p');
+  links.style.margin = '0.5rem 0 0';
+  const makeLink = (href, text) => {
+    const a = document.createElement('a');
+    a.href = href;
+    a.textContent = text;
+    return a;
+  };
+  links.appendChild(makeLink(`${dir}/summary.json`, 'summary.json'));
+  links.appendChild(document.createTextNode(' · '));
+  links.appendChild(makeLink(`${dir}/provider.log`, 'provider.log'));
+  links.appendChild(document.createTextNode(' · '));
+  links.appendChild(makeLink(`${dir}/app.log`, 'app.log'));
+  div.appendChild(links);
+
+  container.appendChild(div);
+}
+
+function renderSummaryChart(runs) {
+  const entries = Object.values(runs);
+  new Chart(document.getElementById('summaryChart'), {
+    type: 'bar',
+    data: {
+      labels: ['sent', 'failed', 'extract_attempts'],
+      datasets: entries.map((run, i) => ({
+        label: run.label,
+        backgroundColor: PALETTE[i % PALETTE.length],
+        data: [run.final.sent, run.final.failed, run.final.extract_attempts],
+      })),
+    },
+    options: { responsive: true, plugins: { title: { display: true, text: 'Resultado final por ejecución' } } },
+  });
+}
+
+(async () => {
+  try {
+    const runs = loadRuns();
+    const cards = document.getElementById('cards');
+    for (const [dir, run] of Object.entries(runs)) {
+      renderCard(cards, run, dir);
+    }
+    renderSummaryChart(runs);
+    const footer = document.getElementById('footer');
+    const extractLink = document.createElement('a');
+    extractLink.href = 'extract.py';
+    extractLink.textContent = 'extract.py';
+    const decisionsLink = document.createElement('a');
+    decisionsLink.href = '../decisions.md';
+    decisionsLink.textContent = 'decisions.md';
+    footer.append('Generado con ', extractLink, ' desde docker-compose logs. Contexto y argumentación en ', decisionsLink, '.');
+  } catch (err) {
+    document.getElementById('error').textContent =
+      'Error cargando los datos: ' + err.message;
+  }
+})();
+</script>
+</body>
+</html>

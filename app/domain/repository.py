@@ -21,6 +21,12 @@ class InMemoryRequestRepository:
         record.status = RequestStatus.processing
         return record
 
+    def mark_sent(self, request_id: str) -> None:
+        self._records[request_id].status = RequestStatus.sent
+
+    def mark_failed(self, request_id: str) -> None:
+        self._records[request_id].status = RequestStatus.failed
+
 
 _repository = InMemoryRequestRepository()
 

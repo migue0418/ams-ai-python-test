@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class RequestStatus(str, Enum):
@@ -12,7 +12,15 @@ class RequestStatus(str, Enum):
 
 
 class RequestIn(BaseModel):
-    user_input: str
+    user_input: str = Field(min_length=1)
+
+    @field_validator("user_input")
+    @classmethod
+    def not_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("user_input cannot be blank")
+        return stripped
 
 
 class RequestCreatedOut(BaseModel):

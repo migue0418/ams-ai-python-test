@@ -1,0 +1,24 @@
+{
+  "label": "Parsing en capas + reintento acotado",
+  "total_requests": 2748,
+  "drain_seconds": 4,
+  "final": {
+    "sent": 2645,
+    "failed": 103,
+    "failed_extraction": 103,
+    "failed_provider": 0,
+    "extract_attempts": 3307,
+    "ratio_attempts_per_request": 1.203,
+    "rate_limited_429": 0
+  },
+  "samples": [
+    {
+      "t": 4,
+      "total": 2748,
+      "sent": 2645,
+      "failed": 103,
+      "extract_attempts": 3307,
+      "rate_limited_429": 0
+    }
+  ]
+}
