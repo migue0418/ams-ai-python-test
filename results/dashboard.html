@@ -35,8 +35,8 @@
     Datos reales contra el stack levantado con <code>docker-compose</code> (carga generada por
     <code>docker-compose run --rm load-test</code>, 200 VUs). Cada carpeta <code>results/&lt;nombre&gt;/</code>
     tiene su <code>summary.json</code>, generado por <a href="extract.py">extract.py</a> a partir de
-    <code>docker-compose logs</code>, más los logs completos de esa corrida. Por ahora solo hay una
-    corrida capturada — para comparar antes/después, se añade otra carpeta y se reejecuta
+    <code>docker-compose logs</code>, más los logs completos de esa ejecución. Por ahora solo hay una
+    ejecución capturada. Para comparar antes/después, se añade otra carpeta y se reejecuta
     <a href="embed_data.py">embed_data.py</a>.
   </p>
 
@@ -126,7 +126,7 @@ function renderSummaryChart(runs) {
         data: [run.final.sent, run.final.failed, run.final.extract_attempts],
       })),
     },
-    options: { responsive: true, plugins: { title: { display: true, text: 'Resultado final por corrida' } } },
+    options: { responsive: true, plugins: { title: { display: true, text: 'Resultado final por ejecución' } } },
   });
 }
 

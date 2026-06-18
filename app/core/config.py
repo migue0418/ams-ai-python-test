@@ -21,6 +21,11 @@ class Settings:
 
     worker_concurrency: int = _int_env("WORKER_CONCURRENCY", 50)
 
+    # one full k6 burst (~2748 requests) fits comfortably under this; it's here
+    # so a queue that never drains (stacked runs, a stuck provider) hits a wall
+    # and starts answering 503 instead of growing forever
+    queue_max_size: int = _int_env("QUEUE_MAX_SIZE", 5000)
+
     retry_max_attempts: int = _int_env("RETRY_MAX_ATTEMPTS", 5)
     retry_wait_initial_seconds: float = _float_env("RETRY_WAIT_INITIAL_SECONDS", 0.2)
     retry_wait_max_seconds: float = _float_env("RETRY_WAIT_MAX_SECONDS", 5.0)

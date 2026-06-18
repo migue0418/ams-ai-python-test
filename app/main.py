@@ -1,9 +1,15 @@
+import logging
 from contextlib import asynccontextmanager
 
 from api.routes import router as api_router
 from domain.repository import get_repository
 from fastapi import FastAPI
 from services import ai_client, pipeline, provider_client
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
 
 
 @asynccontextmanager

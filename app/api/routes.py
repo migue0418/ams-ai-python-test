@@ -25,7 +25,7 @@ def create_request(
 
 
 @router.post("/{request_id}/process", response_model=RequestStatusOut)
-def process_request(
+async def process_request(
     request_id: str,
     response: Response,
     repository: InMemoryRequestRepository = Depends(get_repository),
@@ -39,8 +39,12 @@ def process_request(
 
     # only the first call enqueues, a repeat call just returns the current status
     if record.status == RequestStatus.queued:
+        if not pipeline.enqueue(request_id):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Queue is full, try again later",
+            )
         record = repository.start_processing(request_id)
-        pipeline.enqueue(request_id)
         response.status_code = status.HTTP_202_ACCEPTED
 
     return RequestStatusOut(id=record.id, status=record.status)

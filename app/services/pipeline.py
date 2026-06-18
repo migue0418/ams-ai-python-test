@@ -13,7 +13,7 @@ _workers: list[asyncio.Task] = []
 
 async def start(repository: InMemoryRequestRepository) -> None:
     global _queue, _workers
-    _queue = asyncio.Queue()
+    _queue = asyncio.Queue(maxsize=settings.queue_max_size)
     # pool size caps concurrency against the provider, regardless of incoming HTTP burst
     _workers = [
         asyncio.create_task(_worker(repository, name=f"worker-{i}"))
@@ -29,9 +29,14 @@ async def stop() -> None:
     _workers = []
 
 
-def enqueue(request_id: str) -> None:
+def enqueue(request_id: str) -> bool:
+    """Returns False if the queue is full instead of growing it without limit."""
     assert _queue is not None, "pipeline.start() must run before enqueue()"
-    _queue.put_nowait(request_id)  # never block the request handler
+    try:
+        _queue.put_nowait(request_id)  # never block the request handler
+        return True
+    except asyncio.QueueFull:
+        return False
 
 
 async def _worker(repository: InMemoryRequestRepository, name: str) -> None:

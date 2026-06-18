@@ -80,6 +80,26 @@ por [`results/extract.py`](../results/extract.py) a partir de
 `docker-compose logs`. Ver también
 [`results/dashboard.html`](../results/dashboard.html).
 
+## Por qué la cola tiene un límite
+
+Lanzar `load-test` antes de que la ejecución anterior hubiera drenado del
+todo hizo que el ratio y el porcentaje de éxito leídos en el dashboard
+salieran distintos cada vez (0.61, luego 0.49, luego 1.35) según el
+momento exacto en que se miraba. No era un error de cálculo: la cola
+interna (`asyncio.Queue`) no tenía límite, así que las ejecuciones
+solapadas se iban apilando sin avisar, y el conteo de intentos a
+`/extract` seguía subiendo en segundo plano mucho después de que k6 ya
+hubiera terminado.
+
+Para que esto no pase desapercibido, la cola ahora tiene un tope
+(`QUEUE_MAX_SIZE`, 5000 por defecto, en `core/config.py`). Una ejecución
+normal de `load-test` (2748 requests) se queda muy por debajo de ese
+límite y no nota el cambio. Si se llegan a apilar varias ejecuciones sin
+esperar a que la anterior drene, `POST /process` empieza a devolver `503`
+en vez de seguir aceptando trabajo sin límite. También se añadió
+timestamp a los logs (`logging.basicConfig` en `main.py`) para poder
+acotar qué pasó y cuándo sin depender de la marca de tiempo de Docker.
+
 ## Por qué no "structured output" / JSON mode
 
 `AIRequest` en el provider solo acepta `messages`; cualquier
