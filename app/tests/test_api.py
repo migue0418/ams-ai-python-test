@@ -52,6 +52,12 @@ def test_create_process_get_flow():
         assert get_res.json()["status"] in ("processing", "sent")
 
 
+def test_create_request_rejects_blank_input():
+    with TestClient(main.app) as client:
+        res = client.post("/v1/requests", json={"user_input": "   "})
+        assert res.status_code == 422
+
+
 def test_process_missing_id_returns_404():
     with TestClient(main.app) as client:
         res = client.post("/v1/requests/does-not-exist/process")
