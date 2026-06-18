@@ -1,5 +1,6 @@
 import httpx
 from core.config import settings
+from services.rate_limiter import SlidingWindowRateLimiter
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -10,6 +11,10 @@ from tenacity import (
 NOTIFY_PATH = "/v1/notify"
 
 _client: httpx.AsyncClient | None = None
+_rate_limiter = SlidingWindowRateLimiter(
+    max_requests=settings.rate_limit_max_requests,
+    window_seconds=settings.rate_limit_window_seconds,
+)
 
 
 # split so tenacity only retries the transient one, not e.g. a bad payload
@@ -51,6 +56,7 @@ async def send_notification(to: str, message: str, notif_type: str) -> None:
         "provider_client.start() must run before send_notification()"
     )
 
+    await _rate_limiter.acquire()
     try:
         response = await _client.post(
             NOTIFY_PATH,

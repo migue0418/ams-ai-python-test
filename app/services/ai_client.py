@@ -1,6 +1,3 @@
-import json
-from typing import NamedTuple
-
 import httpx
 from core.config import settings
 
@@ -21,12 +18,6 @@ Respuesta: {"to": "ana@test.com", "message": "te espero a las 5", "type": "email
 _client: httpx.AsyncClient | None = None
 
 
-class ExtractedIntent(NamedTuple):
-    to: str
-    message: str
-    type: str
-
-
 async def start() -> None:
     global _client
     _client = httpx.AsyncClient(
@@ -42,9 +33,9 @@ async def stop() -> None:
         _client = None
 
 
-async def extract_intent(user_input: str) -> ExtractedIntent:
-    """Calls the AI engine and parses its answer into to/message/type."""
-    assert _client is not None, "ai_client.start() must run before extract_intent()"
+async def fetch_completion(user_input: str) -> str:
+    """One shot at the AI engine, returns the raw assistant content. Parsing lives in extraction.py."""
+    assert _client is not None, "ai_client.start() must run before fetch_completion()"
 
     response = await _client.post(
         EXTRACT_PATH,
@@ -57,8 +48,4 @@ async def extract_intent(user_input: str) -> ExtractedIntent:
         headers={"X-API-Key": settings.provider_api_key},
     )
     response.raise_for_status()
-    content = response.json()["choices"][0]["message"]["content"]
-
-    # anything that isn't clean json, or is missing a key, just fails the request.
-    data = json.loads(content)
-    return ExtractedIntent(to=data["to"], message=data["message"], type=data["type"])
+    return response.json()["choices"][0]["message"]["content"]

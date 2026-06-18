@@ -3,7 +3,7 @@ import logging
 
 from core.config import settings
 from domain.repository import InMemoryRequestRepository
-from services import ai_client, provider_client
+from services import extraction, provider_client
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ async def _worker(repository: InMemoryRequestRepository, name: str) -> None:
         try:
             record = repository.get(request_id)
             if record is not None:
-                intent = await ai_client.extract_intent(record.user_input)
+                intent = await extraction.extract_with_retry(record.user_input)
                 await provider_client.send_notification(
                     intent.to,
                     intent.message,
